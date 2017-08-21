@@ -1,0 +1,46 @@
+<div class="container"><br><br>
+	<div class="container-fluid">
+		<form ng-submit="myEditProduct.editProduct()">
+
+			<div class="col-sm-12 form-group"> 
+				<label for="full_name_id" class="control-label">Name</label>
+				<input type="text" class="form-control" id="full_name_id" name="Name" ng-model="myEditProduct.product.name" placeholder="Name" required="">
+			</div>	
+
+			<div class="col-sm-12 form-group"> 
+				<label for="street1_id" class="control-label">Category</label>
+				<input type="text" class="form-control" id="street1_id" name="category" ng-model="myEditProduct.product.category" placeholder="category" required="">
+			</div>					
+									
+			<div class="col-sm-12 form-group"> 
+				<label for="street2_id" class="control-label">Price</label>
+				<input type="number" class="form-control" id="street2_id" name="price" ng-model="myEditProduct.product.price" placeholder="price" required="">
+			</div>	
+
+			<div class="col-sm-12 form-group"> 
+				<label for="city_id" class="control-label">Brand</label>
+				<input type="text" class="form-control" id="city_id" name="brand" ng-model="myEditProduct.product.brand" placeholder="brand" >
+			</div>									
+									
+			<div class="col-sm-12 form-group"> 
+				<label for="city_id" class="control-label">size</label>
+				<input type="text" class="form-control" id="city_id" name="size" ng-model="myEditProduct.product.size" placeholder="size" >
+			</div>
+			
+			<div class="col-sm-12 form-group"> 
+				<label for="zip_id" class="control-label">color</label>
+				<input type="text" class="form-control" id="zip_id" name="color" ng-model="myEditProduct.product.color" placeholder="color" >
+			</div>
+
+			<div class="col-sm-12 form-group"> 
+				<label for="zip_id" class="control-label">Description</label>
+				<textarea type="text" class="form-control" row='5' id="zip_id" name="description" ng-model="myEditProduct.product.description" placeholder="Description" required=""></textarea>
+			</div>		
+			
+			<div class="col-sm-12 form-group"> 
+				<button type="submit" class="btn btn-primary">Edit item!</button>
+			</div>     
+			
+		</form>
+	</div>
+</div>
