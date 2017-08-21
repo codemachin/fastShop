@@ -6,4 +6,4 @@ module.exports.encrypt = function(key, data) {
     crypted += cipher.final('hex');
 
     return crypted;
-}
+} //encrypting password function with aes256 algorithm

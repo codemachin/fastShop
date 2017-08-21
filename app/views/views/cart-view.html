@@ -45,7 +45,7 @@
 									</div>
 								</div>
 							</td>
-							<td data-th="Price">{{item.price}}</td>
+							<td data-th="Price">Rs.{{item.price}}</td>
 							<td data-th="Quantity" >
 							    <button ng-click="myCart.addToCart(item.productId,$index)" type="button" class="btn btn-default btn-sm" aria-label="Left Align">
 								  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
@@ -55,7 +55,7 @@
 								  <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
 								</button>
 							</td>
-							<td data-th="Subtotal" class="text-center">{{item.price*item.quantity}}</td>
+							<td data-th="Subtotal" class="text-center">Rs.{{item.price*item.quantity}}</td>
 							<td class="actions">
 								
 								<button ng-click="myCart.deleteAll(item.productId,$index)" class="btn btn-danger btn-sm"><i class="fa fa-trash-o"></i></button>								
@@ -64,12 +64,12 @@
 					</tbody>
 					<tfoot>
 						<tr class="visible-xs">
-							<td class="text-center"><strong>Total {{myCart.totalPrice}}</strong></td>
+							<td class="text-center"><strong>Total Rs.{{myCart.totalPrice}}</strong></td>
 						</tr>
 						<tr>
 							<td><a href="#/dashboard" class="btn btn-warning"><i class="fa fa-angle-left"></i> Continue Shopping</a></td>
 							<td colspan="2" class="hidden-xs"></td>
-							<td class="hidden-xs text-center"><strong>Total {{myCart.totalPrice}}</strong></td>
+							<td class="hidden-xs text-center"><strong>Total : Rs.{{myCart.totalPrice}}</strong></td>
 							<td><a href="" class="btn btn-success btn-block">Checkout <i class="fa fa-angle-right"></i></a></td>
 						</tr>
 					</tfoot>

@@ -56,7 +56,7 @@ exports.checkAdmin = function(req,res,next){
 		next();
 	}
 
-}// end checkLogin
+}// end checking if user is admin or not
 
 exports.isVerifying = function(req,res,next){
 
@@ -70,4 +70,4 @@ exports.isVerifying = function(req,res,next){
 		next();
 	}
 
-}// end checkLogin
+}// end checking if user has actually requested otp before updating password by forgot password api

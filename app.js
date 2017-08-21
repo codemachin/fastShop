@@ -73,12 +73,14 @@ fs.readdirSync('./app/controllers').forEach(function(file){
 
 });//end for each
 
+//////////////////////setting session of current logged in user////////////////////
+
 var auth = require("./middlewares/auth");
 app.use(function(err,res,next){
  auth.setLoggedInUser(err,res,next);
 })
 
-
+/////////////////////////error handling illegal routes/////////////////////////////
 
 app.use(function(err, req, res, next) {
     if(res.status == 404){
