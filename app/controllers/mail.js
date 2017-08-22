@@ -8,10 +8,12 @@ var auth = require("./../../middlewares/auth");
 var responseGenerator = require('./../../libs/responseGenerator');
 var crypto = require('./../../libs/crypto');
 var key = "JAICRYPTO-AES256"
+var async = require("async");
+
 
 /*
-	Here we are configuring our SMTP Server details.
-	STMP is mail server which is responsible for sending and recieving email.
+  Here we are configuring our SMTP Server details.
+  STMP is mail server which is responsible for sending and recieving email.
 */
 
 var smtpTransport = nodemailer.createTransport({
@@ -31,92 +33,111 @@ var smtpTransport = nodemailer.createTransport({
 
 /*------------------Routing Started ------------------------*/
 module.exports.controllerFunction = function(app) {
-	var OTP="";
-	var email="";
+  var OTP="";
+  var email="";
+  var user = {};
 
-	app.get('/mail/requestPass/:id',function(req,res){
-		OTP = shortid.generate();
-		email = req.params.id;
-		userModel.findOne({'email':req.params.id},function(err,result){
-			return result;
-		}).then(function(result){
-			///////////////creating mail object and sending mail///////////
+    app.get('/mail/requestPass/:id',function(req,res){
+      OTP = shortid.generate();
+      email = req.params.id;
+      
 
-				var mailOptions={
-						to : result.email,
-						subject : "Enter OTP",
-						text : "Follow this link : http://localhost:3000/#/verify/otp and enter OPT : "+OTP
-					}
-					console.log(mailOptions);
-					smtpTransport.sendMail(mailOptions, function(error, response){
-				   	 if(error){
-				        console.log(error);
-						var myResponse = responseGenerator.generate(true,"Mail sending failed "+err,403,null);
-                		res.send(myResponse);
-					 }else{
-				        	console.log("Message sent: " + response.message);
-				        	req.session.isUserVerifying=true;
-							var myResponse = responseGenerator.generate(false,"Otp sent in your mail.Check and verify",200,null);
-	                		res.send(myResponse);
-				    	 }
-					});
-			
-            }).catch(function(err){
+      //used Async waterfall because needed to first get user info from database to update his password
+      async.waterfall([
+        // A list of functions
+        function(callback){
+            // Function no. 1 in sequence
+            userModel.findOne({'email':req.params.id},function(err,foundUser){
+              if(err){
+                  var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                  callback(myResponse);
+              }
+              else if(foundUser==null || foundUser==undefined || foundUser.email==undefined){
 
-            		var myResponse = responseGenerator.generate(true,"No matching email in database",404,null);
-                	res.send(myResponse);
+                  var myResponse = responseGenerator.generate(true,"user not found",404,null);
+                  callback(myResponse)
+                  
 
+              }
+              else{
+
+                  user = foundUser;
+                  callback(null, foundUser);
+
+              }
+            })
+            
+        },
+        function(arg, callback){
+            // Function no. 2 in sequence
+
+            var mailOptions={
+              to : arg.email,
+              subject : "Enter OTP",
+              text : "Follow this link : http://localhost:3000/#/verify/otp and enter OPT : "+OTP
+            }
+            console.log(mailOptions);
+            smtpTransport.sendMail(mailOptions, function(error, response){
+               if(error){
+                  console.log(error);
+                  var myResponse = responseGenerator.generate(true,"Mail sending failed "+err,403,null);
+                  callback(myResponse)
+               }else{
+                      console.log("Message sent: " + response.message);
+                      req.session.isUserVerifying=true;
+                      var myResponse = responseGenerator.generate(false,"Otp sent in your mail.Check and verify",200,null);
+                      callback(null,myResponse);
+                   }
+            });
+            
+        }
+      ],    
+      function(err, results){
+         if(err){     
+            res.send(err);
+         }else {
+            res.send(results)
+         }
+      });
+      
+      
+    });
+  //////////////////verifies otp/////////////////////////
+
+    app.get('/otp/verify/:id',function(req,res){
+        if(OTP==req.params.id){
+          var myResponse = responseGenerator.generate(false,"OTP verified successfully",200,null);
+                res.send(myResponse);
+        }else{
+          var myResponse = responseGenerator.generate(true,"error verifying otp, enter again",404,null);
+                res.send(myResponse);
+        }
+
+    })
+
+  //////////////////////////updates new password into database////////////////////////
+
+    app.post('/account/update',auth.isVerifying,function(req,res){
+     
+            var passwordDb = crypto.encrypt(req.body.password,key);
+
+            user.password=passwordDb;
+
+            userModel.findOneAndUpdate({'email':email},user,function(err,result){
+                if(err){
+                  var myResponse = responseGenerator.generate(true,"some error"+err,404,null);
+                  res.send(myResponse);
+                }else{
+                  
+                  var myResponse = responseGenerator.generate(false,"pasword updated successfully",200,result);
+                  res.send(myResponse);
+                }
             })
 
-		
-		
-	});
-//////////////////verifies otp/////////////////////////
-
-	app.get('/otp/verify/:id',function(req,res){
-		if(OTP==req.params.id){
-			var myResponse = responseGenerator.generate(false,"OTP verified successfully",200,null);
-            res.send(myResponse);
-		}else{
-			var myResponse = responseGenerator.generate(true,"error verifying otp, enter again",404,null);
-            res.send(myResponse);
-		}
-
-	})
-//////////////////////////updates new password into database////////////////////////
-
-	app.post('/account/update',auth.isVerifying,function(req,res){
-		
-		userModel.findOne({'email': email},function(err,result){
-                	
-                    return result;
-
-                
-            }).then(function(result){  
-
-            		var passwordDb = crypto.encrypt(req.body.password,key);
-            		result.password=passwordDb;
-            		userModel.findOneAndUpdate({'email':email},result,function(err,result){
-            			if(err){
-            				var myResponse = responseGenerator.generate(true,"some error"+err,404,null);
-            				res.send(myResponse);
-            			}else{
-            				
-            				var myResponse = responseGenerator.generate(false,"pasword updated successfully",200,result);
-            				res.send(myResponse);
-            			}
-            		})
-
-            	}).catch(function(err){
-			            var myResponse = responseGenerator.generate(true,"some error "+err,500,null);
-			            res.send(myResponse);
-        		})
-
-
-	})
-	
-
+     });
+    
 }
+
 
 /*--------------------Routing Over----------------------------*/
 

@@ -4,12 +4,12 @@ var Schema = mongoose.Schema;
 
  var item = new Schema({
 
-    productId:{type: mongoose.Schema.Types.ObjectId,required:true },
-    quantity:{type:Number,required:true},
-    price:{type:Number,required:true},
-    name:{type:String,required:true}
+  productId:{type: mongoose.Schema.Types.ObjectId,required:true },
+  quantity:{type:Number,required:true},
+  price:{type:Number,required:true},
+  name:{type:String,required:true}
 
-})
+});
 
 var userSchema = new Schema({
 

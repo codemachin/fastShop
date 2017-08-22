@@ -18,7 +18,7 @@ myApp.controller('cartController',['$http','$routeParams','shopService',function
               window.location="#/"
           }
           else if(response.data.status==200){
-            console.log(response.data);
+            
             main.items= response.data.data;
 
             for(var i=0;i<main.items.cart.length;i++){

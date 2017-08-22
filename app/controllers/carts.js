@@ -7,11 +7,12 @@ var userModel = mongoose.model('User');
 var productModel = mongoose.model('Product');
 var responseGenerator = require('./../../libs/responseGenerator');
 var auth = require("./../../middlewares/auth");
+var async = require("async");
 
 
 module.exports.controllerFunction = function(app) {
     
- ///////////////////////////get user with all cart details//////////////////////   
+    ///////////////////////////get user with all cart details//////////////////////   
 
     cartRouter.get('/all',auth.checkLogin,function(req,res){
         userModel.findOne({'_id':req.session.user._id},function(err,allUsers){
@@ -30,12 +31,12 @@ module.exports.controllerFunction = function(app) {
 
     });//end get all users
 
-/////////////////////////deletes an item from cart, only one item at once/////////////////////////////
+    /////////////////////////deletes an item from cart, only one item at once/////////////////////////////
 
     cartRouter.post('/:id/delete',auth.checkLogin,function(req,res) {
         var update = req.session.user;
 
-////////loop to check if item is already in cart, if yes then it just decreases the quantity
+    ////////loop to check if item is already in cart, if yes then it just decreases the quantity
 
         for(var i=0;i<update.cart.length;i++){
             if(update.cart[i].productId==req.params.id){
@@ -70,7 +71,7 @@ module.exports.controllerFunction = function(app) {
 
     });
 
-//////////////////////////////deletes all items with a specific productId/////////////////////
+     //////////////////////////////deletes all items with a specific productId/////////////////////
 
     cartRouter.post('/:id/deleteAll',auth.checkLogin,function(req,res) {
         
@@ -89,7 +90,6 @@ module.exports.controllerFunction = function(app) {
                     req.session.user.cart = result.cart;
                     var myResponse = responseGenerator.generate(false,"success",200,result);
                     res.send(myResponse);
-                     
 
                 }
 
@@ -98,75 +98,97 @@ module.exports.controllerFunction = function(app) {
 
     });
 
-///////////////////////////////add product to cart /////////////////////////////////////////
+     ///////////////////////////////add product to cart /////////////////////////////////////////
 
     cartRouter.post('/add/:id',auth.checkLogin,function(req,res){
-            var update=req.session.user;
-            
-            var helper=0;
+        var update=req.session.user;
+        var helper=0;
 
-///////////////////////////////object representing embedded cart array in user schema////////
-            var cartItem =  {
-                                productId: req.params.id,
-                                quantity : 1,
-                                price:null,
-                                name:""
-                            };
-////////////////////loop to check if item already in cart if yes then increment by one/////////
-///then using promise to get product id from productDb and update to userDb //////////
-            for(var i=0;i<update.cart.length;i++){
-                if(update.cart[i].productId==req.params.id){
-                    update.cart[i].quantity++;
-                    helper++;
-                }
+        //////////object representing embedded cart array in user schema////////
+        var cartItem =  {
+                            productId: req.params.id,
+                            quantity : 1,
+                            price:null,
+                            name:""
+                        };
+        ////////////////////loop to check if item already in cart if yes then increment by one/////////
+        ///then using Async to get product id from productDb and update to userDb //////////
+        for(var i=0;i<update.cart.length;i++){
+            if(update.cart[i].productId==req.params.id){
+                update.cart[i].quantity++;
+                helper++;
             }
-            if(helper==0){
-                update.cart.push(cartItem);
-            }
-            
-            productModel.findOne({'_id': req.params.id},function(err,result){
-                    
-                    return result;
-                
-            }).then(function(result){  
+        }
+        if(helper==0){
+            update.cart.push(cartItem);
+        }
+        
+        async.waterfall([
+        // A list of functions
+            function(callback){
+                productModel.findOne({'_id': req.params.id},function(err,foundProduct){
 
-            for(var i=0;i<update.cart.length;i++){
-                if(update.cart[i].productId==req.params.id){
-                    update.cart[i].price=result.price;
-                    update.cart[i].name=result.name;
-                }
-            }    
+                    if(err){
+                      var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                      callback(myResponse);
+                      }
+                      else if(foundProduct==null || foundProduct==undefined || foundProduct._id==undefined){
 
-            userModel.findOneAndUpdate({'_id': req.session.user._id},update,{new: true},
+                          var myResponse = responseGenerator.generate(true,"Product not found",404,null);
+                          callback(myResponse);
+
+                      }
+                      else{
+
+                          callback(null, foundProduct);
+
+                      }
+                })
+
+            },
+            function(result, callback){
+
+
+                for(var i=0;i<update.cart.length;i++){
+                    if(update.cart[i].productId==req.params.id){
+                        update.cart[i].price=result.price;
+                        update.cart[i].name=result.name;
+                    }
+                }    
+
+                userModel.findOneAndUpdate({'_id': req.session.user._id},update,{new: true},
                     function(err,result){
                         if(err){
 
                             var myResponse = responseGenerator.generate(true,"some error "+err,500,null);
-                            res.send(myResponse);
-                           
+                            callback(myResponse);  
 
                         }
                         else{
 
                            req.session.user.cart = update.cart;
                            var myResponse = responseGenerator.generate(false,"added to cart",200,result);
-                           res.send(myResponse);
-                            
+                           callback(null, myResponse);   
                            
                         }
 
                     });//end new user save
 
-            }).catch(function(err){
-                var myResponse = responseGenerator.generate(true,"some error "+err,500,null);
-                res.send(myResponse);
-            })
+            }
+        ],    
+            function(err, results){
+                 if(err){     
+                    res.send(err);
+                 }else {
+                    res.send(results);
+                 }
+
+            });
 
        
         
 
     });//end get all users
-
 
 
 
