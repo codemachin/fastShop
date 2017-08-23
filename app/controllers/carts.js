@@ -122,59 +122,64 @@ module.exports.controllerFunction = function(app) {
         if(helper==0){
             update.cart.push(cartItem);
         }
+
+        var functionToFindProductDetails = function(callback){
+
+            productModel.findOne({'_id': req.params.id},function(err,foundProduct){
+
+                if(err){
+                  var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                  callback(myResponse);
+                  }
+                  else if(foundProduct==null || foundProduct==undefined || foundProduct._id==undefined){
+
+                      var myResponse = responseGenerator.generate(true,"Product not found",404,null);
+                      callback(myResponse);
+
+                  }
+                  else{
+
+                      callback(null, foundProduct);
+
+                  }
+            })
+
+        };
+
+        var functionToUpdateCart = function(result, callback){
+
+            for(var i=0;i<update.cart.length;i++){
+                if(update.cart[i].productId==req.params.id){
+                    update.cart[i].price=result.price;
+                    update.cart[i].name=result.name;
+                }
+            }    
+
+            userModel.findOneAndUpdate({'_id': req.session.user._id},update,{new: true},
+                function(err,result){
+                    if(err){
+
+                        var myResponse = responseGenerator.generate(true,"some error "+err,500,null);
+                        callback(myResponse);  
+
+                    }
+                    else{
+
+                       req.session.user.cart = update.cart;
+                       var myResponse = responseGenerator.generate(false,"added to cart",200,result);
+                       callback(null, myResponse);   
+                       
+                    }
+
+                });//end new user save
+
+        };
         
         async.waterfall([
         // A list of functions
-            function(callback){
-                productModel.findOne({'_id': req.params.id},function(err,foundProduct){
-
-                    if(err){
-                      var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
-                      callback(myResponse);
-                      }
-                      else if(foundProduct==null || foundProduct==undefined || foundProduct._id==undefined){
-
-                          var myResponse = responseGenerator.generate(true,"Product not found",404,null);
-                          callback(myResponse);
-
-                      }
-                      else{
-
-                          callback(null, foundProduct);
-
-                      }
-                })
-
-            },
-            function(result, callback){
-
-
-                for(var i=0;i<update.cart.length;i++){
-                    if(update.cart[i].productId==req.params.id){
-                        update.cart[i].price=result.price;
-                        update.cart[i].name=result.name;
-                    }
-                }    
-
-                userModel.findOneAndUpdate({'_id': req.session.user._id},update,{new: true},
-                    function(err,result){
-                        if(err){
-
-                            var myResponse = responseGenerator.generate(true,"some error "+err,500,null);
-                            callback(myResponse);  
-
-                        }
-                        else{
-
-                           req.session.user.cart = update.cart;
-                           var myResponse = responseGenerator.generate(false,"added to cart",200,result);
-                           callback(null, myResponse);   
-                           
-                        }
-
-                    });//end new user save
-
-            }
+            functionToFindProductDetails,
+            functionToUpdateCart
+            
         ],    
             function(err, results){
                  if(err){     

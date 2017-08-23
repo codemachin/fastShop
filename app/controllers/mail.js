@@ -41,56 +41,59 @@ module.exports.controllerFunction = function(app) {
       OTP = shortid.generate();
       email = req.params.id;
       
+      var functionToFindUserByEmail = function(callback){
+            
+          userModel.findOne({'email':req.params.id},function(err,foundUser){
+            if(err){
+                var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
+                callback(myResponse);
+            }
+            else if(foundUser==null || foundUser==undefined || foundUser.email==undefined){
+
+                var myResponse = responseGenerator.generate(true,"user not found",404,null);
+                callback(myResponse)
+                
+
+            }
+            else{
+
+                user = foundUser;
+                callback(null, foundUser);
+
+            }
+          })
+          
+      };
+
+      var functionToSendEmail = function(arg, callback){
+
+          var mailOptions={
+            to : arg.email,
+            subject : "Enter OTP",
+            text : "Follow this link : http://localhost:3000/#/verify/otp and enter OPT : "+OTP
+          }
+          console.log(mailOptions);
+          smtpTransport.sendMail(mailOptions, function(error, response){
+             if(error){
+                console.log(error);
+                var myResponse = responseGenerator.generate(true,"Mail sending failed "+err,403,null);
+                callback(myResponse)
+             }else{
+                    console.log("Message sent: " + response.message);
+                    req.session.isUserVerifying=true;
+                    var myResponse = responseGenerator.generate(false,"Otp sent in your mail.Check and verify",200,null);
+                    callback(null,myResponse);
+                 }
+          });
+          
+      }
 
       //used Async waterfall because needed to first get user info from database to update his password
       async.waterfall([
         // A list of functions
-        function(callback){
-            // Function no. 1 in sequence
-            userModel.findOne({'email':req.params.id},function(err,foundUser){
-              if(err){
-                  var myResponse = responseGenerator.generate(true,"some error"+err,500,null);
-                  callback(myResponse);
-              }
-              else if(foundUser==null || foundUser==undefined || foundUser.email==undefined){
-
-                  var myResponse = responseGenerator.generate(true,"user not found",404,null);
-                  callback(myResponse)
-                  
-
-              }
-              else{
-
-                  user = foundUser;
-                  callback(null, foundUser);
-
-              }
-            })
-            
-        },
-        function(arg, callback){
-            // Function no. 2 in sequence
-
-            var mailOptions={
-              to : arg.email,
-              subject : "Enter OTP",
-              text : "Follow this link : http://localhost:3000/#/verify/otp and enter OPT : "+OTP
-            }
-            console.log(mailOptions);
-            smtpTransport.sendMail(mailOptions, function(error, response){
-               if(error){
-                  console.log(error);
-                  var myResponse = responseGenerator.generate(true,"Mail sending failed "+err,403,null);
-                  callback(myResponse)
-               }else{
-                      console.log("Message sent: " + response.message);
-                      req.session.isUserVerifying=true;
-                      var myResponse = responseGenerator.generate(false,"Otp sent in your mail.Check and verify",200,null);
-                      callback(null,myResponse);
-                   }
-            });
-            
-        }
+        functionToFindUserByEmail,
+        functionToSendEmail
+        
       ],    
       function(err, results){
          if(err){     
